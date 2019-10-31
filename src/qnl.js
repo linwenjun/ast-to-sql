@@ -1,6 +1,5 @@
 class QNL {
-  parse(sql) {
-    let ast = parser.astify(sql, opt);
+  parse(ast) {
     let tableName = getTableName(ast);
     let condition = getCondition(ast.where);
     return `选择表${tableName}中记录,条件为 ${condition}`
@@ -22,7 +21,7 @@ getCondition = (node)=> {
     right = getCondition(node.right);
   }
 
-  let current = getNode(node);
+  let current = getNode(node, left, right);
 
   result = `${left}${current}${right}`
   
@@ -49,6 +48,8 @@ getOp = (op)=> {
       return '包含';
     case 'NOT LIKE':
       return '不包含';
+    case 'BETWEEN':
+      return '在以下值之间';
     default:
       return ''
   }
@@ -74,7 +75,7 @@ getString = (str)=> {
     return `以"${result[1]}"结尾的字符串`;
   }
 
-  return `${str}`;
+  return `'${str}'`;
 }
 
 getNode = (node)=> {
@@ -87,15 +88,13 @@ getNode = (node)=> {
       return node.value;
     case "string":
       return getString(node.value);
+    case "expr_list":
+      let left = getString(node.value[0].value);
+      let right = getString(node.value[1].value);
+      return `[${left}, ${right}]`;
     default:
       return ""
   }
 }
-
-const opt = {
-  database: 'MySQL' // MySQL is the default database
-}
-const { Parser } = require('node-sql-parser');
-const parser = new Parser()
 
 module.exports = QNL
